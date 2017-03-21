@@ -53,7 +53,7 @@ def lambda_handler(event, context):
         'channel':  SLACK_CHANNEL,
         'username': SLACK_USER,
         'text': "%s" % message,
-        'icon_emoji': ":aws:"
+        'icon_emoji': ":a-w-s:"
     }
 
     req = Request(HOOK_URL, json.dumps(slack_message))

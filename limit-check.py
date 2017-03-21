@@ -5,6 +5,7 @@ and posts an SNS message to a topic with AZ and resource information
 """
 
 # Import the SDK
+from __future__ import print_function
 from urllib2 import urlopen
 from urllib2 import Request
 from datetime import datetime
@@ -34,8 +35,22 @@ def extract_status(item):
         return None
 
 def output_ta_check(lst):
-    print "Trusted Advisors checks (service, limit, current)"
+    print("Trusted Advisors checks (service, limit, current)")
     pprint_cli(lst)
+    return
+
+def send_cloudwatch_metric(namespace,metric,dimensions,value):
+    cwc = client('cloudwatch')
+    ret=cwc.put_metric_data(Namespace=namespace,
+        MetricData=[
+            {
+                'MetricName': metric,
+                'Dimensions': [ dimensions ],
+                'Timestamp': datetime.now(),
+                'Value': value
+            }
+        ])
+    print("ret = %s" % str(ret))
     return
 
 def publish_sns(sns_message, sns_arn, rgn):
@@ -45,7 +60,7 @@ def publish_sns(sns_message, sns_arn, rgn):
 
     sns_client = client('sns', region_name=rgn)
 
-    print "Publishing message to SNS topic..."
+    print("Publishing message to SNS topic...")
     sns_client.publish(TargetArn=sns_arn, Message=sns_message)
     return
 
@@ -59,7 +74,7 @@ def trusted_alert(warn_list):
     for ta_value in warn_list:
         ta_message += '\n' + ta_value
     ta_message += '\n'
-    #print ta_message
+    #print( ta_message)
     return ta_message
 
 def ec2_alert(limit, usage, rgn):
@@ -75,7 +90,7 @@ def ec2_alert(limit, usage, rgn):
     ec2_message += "\nActual Usage: "
     ec2_message += str(usage)
     ec2_message += "\n"
-    #print ec2_message
+    #print (ec2_message)
     return ec2_message
 
 def cloudformation_alert(limit, usage, rgn):
@@ -91,7 +106,7 @@ def cloudformation_alert(limit, usage, rgn):
     cfn_message += "\nActual Usage: "
     cfn_message += str(usage)
     cfn_message += "\n"
-    #print cfn_message
+    #print(cfn_message)
     return cfn_message
 def dynamodb_alert(warn_list):
     """
@@ -103,7 +118,7 @@ def dynamodb_alert(warn_list):
     for dynamo_value in warn_list:
         dynamodb_message += '\n' + dynamo_value
     dynamodb_message += '\n'
-    #print dynamodb_message
+    #print(dynamodb_message)
     return dynamodb_message
 
 def assume_role(account_id, rgn, event, alerts):
@@ -129,7 +144,7 @@ def assume_role(account_id, rgn, event, alerts):
         aws_session_token=response['Credentials']['SessionToken'],
         region_name=rgn
     )
-    print "Assumed session for "+account_id+" in region "+rgn+". Beginning checks..."
+    print("Assumed session for %s in region %s. Beginning checks..." % (account_id, rgn))
     ##############
     # call trusted advisor for the limit checks
     ##############
@@ -145,7 +160,7 @@ def assume_role(account_id, rgn, event, alerts):
         # now loop through till the check is complete
         done = False
         while not done:
-            print "Waiting for updated TA results..."
+            print("Waiting for updated TA results...")
             # calling Trusted Advisor to see if check is complete
             refresh_response = support_client.describe_trusted_advisor_check_refresh_statuses(
                 checkIds=[
@@ -162,7 +177,7 @@ def assume_role(account_id, rgn, event, alerts):
             checkId='eW7HH0l7J9',
             language='en'
         )
-        print "Contacting Trusted Advisor..."
+        print("Contacting Trusted Advisor...")
 
         # parse the json and find flagged resources that are in warning mode
         flag_list = response['result']['flaggedResources']
@@ -188,7 +203,7 @@ def assume_role(account_id, rgn, event, alerts):
             if extract_status(flag_item) is not None:
                 status_list.append(extract_status(flag_item))
         if not warn_list:
-            print "TA all green"
+            print("TA all green")
         else:
             global TA_MESSAGE
             TA_MESSAGE = trusted_alert(warn_list)
@@ -241,7 +256,7 @@ def assume_role(account_id, rgn, event, alerts):
             alerts[rgn]['EC2'] += 1
         else:
             alerts[rgn]['EC2'] = 1
-        print ec2_message
+        print(ec2_message)
 
     ###############
     #cfn resource limit
@@ -292,7 +307,7 @@ def assume_role(account_id, rgn, event, alerts):
             alerts[rgn] += 1
         else:
             alerts[rgn]['cfn'] = 1
-        print cfn_message
+        print(cfn_message)
 
     ################
     #call DynamoDB Limits for rgn
@@ -388,15 +403,15 @@ def assume_role(account_id, rgn, event, alerts):
         if len(warn_list) > 0:
             dynamodb_message = dynamodb_alert(warn_list)
     except:
-        print "Unable to describe DynamoDB limits in "+rgn
+        print("Unable to describe DynamoDB limits in  %s" % rgn)
 
     # ALL CHECKS COMPLETE, returning information to user
     rgn_message = ec2_message + cfn_message + dynamodb_message
     if rgn_message != '':
-        print rgn_message
+        print(rgn_message)
 
-    print "Total number of limits near breach:\n" + dumps(alerts)
-    print "Checks complete for "+account_id+" in region "+rgn+".\n-----------------------"
+    print("Total number of limits near breach:\n %s" % dumps(alerts) )
+    print("Checks complete for %s in region %s.\n-----------------------"  % (account_id,  rgn))
 
     response = {'rgn_message':rgn_message, 'alerts':alerts, 'ta_status': str(status_list)}
     return response
@@ -423,14 +438,14 @@ def send_report(total_alerts, event):
 
     url = 'https://5as186uhg7.execute-api.us-east-1.amazonaws.com/prod/generic'
     data = dumps(post_dict)
-    print data
+    print(data)
     headers = {'content-type': 'application/json'}
     response = Request(url, data, headers)
     rsp = urlopen(response)
     content = rsp.read()
     rspcode = rsp.getcode()
-    print "Response Code:", rspcode
-    print "Response Content:", content
+    print( "Response Code: %s" % rspcode )
+    print( "Response Content: %s" % content )
 
 def lambda_handler(event, context):
     """
@@ -440,7 +455,7 @@ def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
 
     account_id = event['AccountId']
-    print 'accountID: ' + str(account_id)
+    print("accountID: %s" % str(account_id))
     header_message = "AWS account "+str(account_id)
     header_message += " has limits approaching their upper threshold."
     header_message += "Please take action accordingly.\n"
@@ -475,8 +490,10 @@ def lambda_handler(event, context):
         # updating local alerts to be passed and updated by next iteration
         alerts = response['alerts']
     if sns_message == "" and TA_MESSAGE == "":
-        print "All systems green!"
+        print("All systems green!")
+        send_cloudwatch_metric('LimitMonitor','LimitMonitor',{'Name':'LimitMonitor','Value':'All'},0.0)
     else:
+        send_cloudwatch_metric('LimitMonitor','LimitMonitor',{'Name':'LimitMonitor','Value':'All'},1.0)
         publish_sns(header_message + TA_MESSAGE + sns_message, event['SNSArn'], event['Region'])
         if event['SendAnonymousData'] == 'Yes':
             send_report(alerts, event)
