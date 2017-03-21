@@ -477,7 +477,7 @@ def lambda_handler(event, context):
     if sns_message == "" and TA_MESSAGE == "":
         print "All systems green!"
     else:
-        publish_sns(header_message + TA_MESSAGE + sns_message , event['SNSArn'], event['Region'])
+        publish_sns(header_message + TA_MESSAGE + sns_message, event['SNSArn'], event['Region'])
         if event['SendAnonymousData'] == 'Yes':
             send_report(alerts, event)
 
