@@ -479,8 +479,8 @@ def lambda_handler(event, context):
         REGION_LIST=['us-east-1']
 
     if not 'cloudwatch_metric' in os.environ.keys():
-        print("missing environment variable cloudwatch_metric")
-        return
+        raise ValueError("missing environment variable cloudwatch_metric")
+
 
     for rgn in REGION_LIST:
         alerts[rgn] = {}

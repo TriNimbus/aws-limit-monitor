@@ -12,8 +12,8 @@ from urllib2 import Request, urlopen, URLError, HTTPError
 
 
 if not 'kmsEncryptedHookUrl' in os.environ.keys() or  not 'slackChannel' in os.environ.keys() or not 'slackUser' in os.environ.keys():
-    print ("Environment variables not defined.  Need 'kmsEncryptedHookUrl', 'slackChannel' and 'slackUser' ")
-    exit(1)
+    raise ValueError("Environment variables not defined.  Need 'kmsEncryptedHookUrl', 'slackChannel' and 'slackUser' ")
+
 
 # The base-64 encoded, encrypted key (CiphertextBlob) stored in the kmsEncryptedHookUrl environment variable
 ENCRYPTED_HOOK_URL = os.environ['kmsEncryptedHookUrl']
