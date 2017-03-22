@@ -478,6 +478,10 @@ def lambda_handler(event, context):
     else:
         REGION_LIST=['us-east-1']
 
+    if not 'cloudwatch_metric' in os.environ.keys():
+        print("missing environment variable cloudwatch_metric")
+        return
+
     for rgn in REGION_LIST:
         alerts[rgn] = {}
     # adding global key for IAM
@@ -491,9 +495,9 @@ def lambda_handler(event, context):
         alerts = response['alerts']
     if sns_message == "" and TA_MESSAGE == "":
         print("All systems green!")
-        send_cloudwatch_metric('LimitMonitor','LimitMonitor',{'Name':'LimitMonitor','Value':'All'},0.0)
+        send_cloudwatch_metric(os.environ['cloudwatch_metric'],os.environ['cloudwatch_metric'],{'Name':os.environ['cloudwatch_metric'],'Value':'All'},0.0)
     else:
-        send_cloudwatch_metric('LimitMonitor','LimitMonitor',{'Name':'LimitMonitor','Value':'All'},1.0)
+        send_cloudwatch_metric(os.environ['cloudwatch_metric'],os.environ['cloudwatch_metric'],{'Name':os.environ['cloudwatch_metric'],'Value':'All'},1.0)
         publish_sns(header_message + TA_MESSAGE + sns_message, event['SNSArn'], event['Region'])
         if event['SendAnonymousData'] == 'Yes':
             send_report(alerts, event)
